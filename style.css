@@ -51,8 +51,20 @@ body {
     display: none; /* Escondido no telemóvel */
 }
 
-@media (min-width: 768px) {
-    .login-left { display: block; }
+@media (max-width: 768px) {
+    .login-container {
+        flex-direction: column; /* Faz a foto ficar em cima e o login embaixo */
+    }
+
+    .login-left {
+        display: block; /* Garante que a foto apareça */
+        height: 250px;  /* Define uma altura fixa para não ocupar a tela toda */
+        width: 100%;
+    }
+
+    .login-right {
+        padding: 20px;
+    }
 }
 
 .login-left-overlay {
