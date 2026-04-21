@@ -1,275 +1,337 @@
 <!DOCTYPE html>
 <html lang="pt-PT">
 <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>LocAgenda - Sistema de Agendamentos</title>
-        
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-        
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-        
-        <link rel="stylesheet" href="style.css">
-    </head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LocAgenda - Sistema de Agendamentos</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <link rel="stylesheet" href="style.css">
+</head>
 
-    <body>
+<body>
 
-        <!-- Layout Principal -->
-        <div class="app-container">
-            
-            <!-- Sidebar -->
-            <aside class="sidebar">
-                <div class="sidebar-header">
-                    <div class="logo-icon"><i class="fa-solid fa-building text-white"></i></div>
-                    <span>LocAgenda</span>
+    <div id="login-screen">
+        <div class="login-left">
+            <div class="login-left-overlay">
+                <div class="logo-icon-login">
+                    <i class="fa-solid fa-building text-white"></i>
                 </div>
-                <nav class="nav-menu">
-                    <button class="nav-btn active" onclick="switchTab('dashboard')" id="btn-tab-dashboard">
-                        <i class="fa-solid fa-chart-pie"></i> Painel / Relatórios
-                    </button>
-                    <button class="nav-btn" onclick="switchTab('list')" id="btn-tab-list">
-                        <i class="fa-solid fa-calendar-days"></i> Agendamentos
-                    </button>
-                    <button class="nav-btn" onclick="prepararNovoAgendamento()" id="btn-tab-form">
-                        <i class="fa-solid fa-circle-plus"></i> Nova Visita
-                    </button>
-                    
-                    <div style="height: 1px; background-color: #1e293b; margin: 16px 0;"></div>
-                    
-                    <button class="nav-btn" onclick="exportarAgendamentos()">
-                        <i class="fa-solid fa-file-csv"></i> Exportar para PDF
-                    </button>
-                </nav>
-            </aside>                
-
-            <!-- Conteúdo Principal -->
-            <main class="main-content">
-                <div class="content-wrapper">
-
-                    <!-- TAB 1: DASHBOARD -->
-                    <section id="tab-dashboard" class="tab-section active">
-                        <div class="section-header">
-                            <div>
-                                <h2 class="section-title">Painel de Controle</h2>
-                                <p class="section-subtitle">Acompanhe os seus agendamentos e resultados.</p>
-                            </div>
-                        </div>
-
-                        <!-- Destaque: Próxima Visita -->
-                        <div class="highlight-card" id="proxima-visita-card">
-                            <i class="fa-solid fa-calendar-days highlight-bg-icon"></i>
-                            <div style="color: var(--primary); font-weight: bold; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-                                <i class="fa-solid fa-triangle-exclamation"></i> 📌 Próxima Visita Agendada
-                            </div>
-                            <div id="proxima-visita-content" style="position: relative; z-index: 10;">
-                                <!-- Preenchido via JS -->
-                            </div>
-                        </div>
-
-                        <!-- Filtros do Dashboard -->
-                        <div class="filters-bar">
-                            <div class="form-group" style="flex: 0 1 auto;">
-                                <label>De (Data Inicial)</label>
-                                <input type="date" class="form-control" id="dash-data-inicio" onchange="renderDashboard()">
-                            </div>
-                            <div class="form-group" style="flex: 0 1 auto;">
-                                <label>Até (Data Final)</label>
-                                <input type="date" class="form-control" id="dash-data-fim" onchange="renderDashboard()">
-                            </div>
-                            <button class="btn btn-outline" onclick="limparFiltrosDashboard()">Limpar Filtro</button>
-                        </div>
-
-                        <!-- Cards de Métricas -->
-                        <div class="dashboard-grid">
-                            <div class="stat-card">
-                                <div>
-                                    <div class="stat-title">Total no Período</div>
-                                    <div class="stat-value" id="count-total">0</div>
-                                    <div class="stat-money" id="valor-total">R$ 0,00</div>
-                                </div>
-                                <div class="stat-icon icon-blue"><i class="fa-solid fa-calendar-days"></i></div>
-                            </div>
-                            <div class="stat-card border-warning">
-                                <div>
-                                    <div class="stat-title">Pendentes</div>
-                                    <div class="stat-value" id="count-pendentes">0</div>
-                                    <div class="stat-money" id="valor-pendentes">R$ 0,00</div>
-                                </div>
-                                <div class="stat-icon icon-yellow"><i class="fa-regular fa-clock"></i></div>
-                            </div>
-                            <div class="stat-card border-success">
-                                <div>
-                                    <div class="stat-title">Efetivados</div>
-                                    <div class="stat-value" id="count-efetivados">0</div>
-                                    <div class="stat-money" id="valor-efetivados">R$ 0,00</div>
-                                </div>
-                                <div class="stat-icon icon-green"><i class="fa-solid fa-circle-check"></i></div>
-                            </div>
-                            <div class="stat-card border-danger">
-                                <div>
-                                    <div class="stat-title">Frustrados</div>
-                                    <div class="stat-value" id="count-frustrados">0</div>
-                                    <div class="stat-money" id="valor-frustrados">R$ 0,00</div>
-                                </div>
-                                <div class="stat-icon icon-red"><i class="fa-solid fa-circle-xmark"></i></div>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- TAB 2: LISTA DE AGENDAMENTOS -->
-                    <section id="tab-list" class="tab-section">
-                        <div class="section-header">
-                            <div>
-                                <h2 class="section-title">Agendamentos</h2>
-                                <p class="section-subtitle">Consulte suas visitas e históricos.</p>
-                            </div>
-                            <button class="btn btn-primary" onclick="prepararNovoAgendamento()">
-                                <i class="fa-solid fa-circle-plus"></i> Novo Agendamento
-                            </button>
-                        </div>
-
-                        <!-- Filtros da Lista -->
-                        <div class="filters-bar" style="justify-content: space-between; align-items: center;">
-                            <div class="form-group" style="max-width: 400px; position: relative;">
-                                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 35px; color: #94a3b8;"></i>
-                                <label>Pesquisar</label>
-                                <input type="text" class="form-control" id="busca-lista" placeholder="Filtrar por referência..." style="padding-left: 36px;" onkeyup="renderLista()">
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <input type="checkbox" id="ver-finalizados" onchange="renderLista()" style="width: 16px; height: 16px;">
-                                <label for="ver-finalizados" style="font-size: 0.875rem; font-weight: 600; color: var(--text-main); cursor: pointer;">Mostrar Histórico (Finalizados)</label>
-                            </div>
-                        </div>
-
-                        <!-- Tabela -->
-                        <div class="table-container">
-                            <table>
-                                <thead>
-                                   <tr>
-                                        <th style="width: 25%">Referência / Detalhes</th>
-                                        <th>Valor do Imóvel</th>
-                                        <th>Data e Hora</th>
-                                        <th>Status Imóvel</th>
-                                        <th>Resultado</th>
-                                        <th style="text-align: right;">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tabela-corpo">
-                                    <!-- Preenchido via JS -->
-                                   
-                                </tbody>
-                            </table>
-                        </div>
-                    </section>
-
-                    <!-- TAB 3: FORMULÁRIO -->
-                    <section id="tab-form" class="tab-section">
-                        <div class="section-header">
-                            <div>
-                                <h2 class="section-title" id="form-title">Agendar Nova Visita</h2>
-                                <p class="section-subtitle">Preencha os detalhes da visita abaixo.</p>
-                            </div>
-                        </div>
-
-                        <div style="background: var(--card-bg); padding: 32px; border-radius: 12px; border: 1px solid var(--border-color); max-width: 800px; box-shadow: var(--shadow-sm);">
-                            <form id="agendamento-form" onsubmit="salvarAgendamento(event)">
-                                <input type="hidden" id="form-id">
-                                
-                                <div class="form-group" style="margin-bottom: 20px;">
-                                    <label>Referência</label>
-                                    <input type="text" id="form-referencia" class="form-control" required placeholder="Referência">
-                                </div>
-                                <div class="form-group" style="margin-bottom: 20px;">
-                                    <label>Valor do Imóvel (R$)</label>
-                                    <input type="number" id="form-valor" class="form-control" step="0.01" min="0" placeholder="Informe o valor do Imóvel">
-                                </div>
-
-                                <div class="form-group" style="margin-bottom: 20px;">
-                                    <label>Detalhes da Visita</label>
-                                    <textarea id="form-detalhes" class="form-control" rows="4" required placeholder="Digite os detalhes, nomes, observações..."></textarea>
-                                </div>
-
-                                <div style="display: flex; gap: 24px; margin-bottom: 32px; flex-wrap: wrap;">
-                                    <div class="form-group">
-                                        <label>Data e Hora</label>
-                                        <input type="datetime-local" id="form-datahora" class="form-control" required>
-                                    </div>
-                                    
-                                    <div class="form-group">
-                                        <label>Acompanhamento</label>
-                                        <div style="display: flex; gap: 16px; margin-top: 8px;">
-                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                                <input type="radio" name="form-acompanhamento" value="Acompanhar" checked> Acompanhar
-                                            </label>
-                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                                <input type="radio" name="form-acompanhamento" value="Não Acompanhar"> Não Acompanhar
-                                            </label>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label>Local da Chave</label>
-                                        <div style="display: flex; gap: 16px; margin-top: 8px;">
-                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                                <input type="radio" name="form-chave" value="Locabens" checked> Locabens
-                                            </label>
-                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                                <input type="radio" name="form-chave" value="Redentora"> Redentora
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div style="display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid var(--border-color); padding-top: 24px;">
-                                    <button type="button" class="btn btn-outline" onclick="switchTab('list')">Cancelar</button>
-                                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Guardar Agendamento</button>
-                                </div>
-                            </form>
-                        </div>
-                    </section>
-
-                </div>
-            </main>
+                <h2>Seja Bem-vindo(a)!</h2>
+                <p>Inicie sessão para gerir os seus agendamentos e manter as suas visitas organizadas.</p>
+            </div>
         </div>
 
-        <!-- Modal de Alerta Customizado -->
-        <div class="modal-overlay" id="alerta-modal">
-            <div class="modal-box">
-                <div style="display: flex; align-items: center; gap: 12px; color: var(--warning); margin-bottom: 16px;">
-                    <i class="fa-solid fa-bell fa-shake" style="font-size: 2rem;"></i>
-                    <h2 style="font-size: 1.5rem; font-weight: bold; color: #1e293b;">Lembrete de Visita!</h2>
-                </div>
-                <p id="alerta-texto" style="font-size: 1.125rem; color: #475569; margin-bottom: 24px; line-height: 1.5;"></p>
-                <button class="btn" style="width: 100%; justify-content: center; background: var(--warning); color: #713f12; font-size: 1rem;" onclick="fecharAlerta()">
-                    Ciente, Fechar
+        <div class="login-right">
+            <div class="login-box">
+                <h2 style="font-size: 1.8rem; color: #1e293b; margin-bottom: 8px;">Iniciar Sessão</h2>
+                <p style="color: #64748b; margin-bottom: 32px;">Faça login com a sua conta Google</p>
+                
+                <button id="btn-login-google" class="btn-google-novo">
+                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/google/google-original.svg" width="20" alt="Google">
+                    Continuar com o Google
                 </button>
             </div>
         </div>
+    </div>
 
-        <div class="modal-overlay" id="exportar-modal">
-            <div class="modal-box">
-                <div style="display: flex; align-items: center; gap: 12px; color: var(--primary); margin-bottom: 16px;">
-                    <i class="fa-solid fa-file-pdf" style="font-size: 2rem;"></i>
-                    <h2 style="font-size: 1.5rem; font-weight: bold; color: #1e293b;">Exportar PDF</h2>
-                </div>
-                <p style="font-size: 1rem; color: #475569; margin-bottom: 16px;">Selecione o período de visitas que deseja incluir no relatório:</p>
+    <div class="app-container" id="app-container-main" style="display: none;">
+        
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-icon"><i class="fa-solid fa-building text-white"></i></div>
+                <span>LocAgenda</span>
+            </div>
+            <nav class="nav-menu">
+                <button class="nav-btn active" onclick="switchTab('dashboard')" id="btn-tab-dashboard">
+                    <i class="fa-solid fa-chart-pie"></i> Painel / Relatórios
+                </button>
+                <button class="nav-btn" onclick="switchTab('list')" id="btn-tab-list">
+                    <i class="fa-solid fa-calendar-days"></i> Agendamentos
+                </button>
+                <button class="nav-btn" onclick="prepararNovoAgendamento()" id="btn-tab-form">
+                    <i class="fa-solid fa-circle-plus"></i> Nova Visita
+                </button>
+                
+                <div style="height: 1px; background-color: #1e293b; margin: 16px 0;"></div>
+                
+                <button class="nav-btn" onclick="exportarAgendamentos()">
+                    <i class="fa-solid fa-file-pdf"></i> Exportar para PDF
+                </button>
+                <button class="nav-btn" onclick="fazerLogout()">
+                    <i class="fa-solid fa-right-from-bracket"></i> Sair
+                </button>
+            </nav>
+        </aside>                
 
-                <div class="form-group" style="margin-bottom: 12px;">
-                    <label>Data Inicial</label>
-                    <input type="date" class="form-control" id="export-data-inicio">
-                </div>
-                <div class="form-group" style="margin-bottom: 24px;">
-                    <label>Data Final</label>
-                    <input type="date" class="form-control" id="export-data-fim">
-                </div>
+        <main class="main-content">
+            <div class="content-wrapper">
 
-                <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                    <button class="btn btn-outline" onclick="fecharModalExportar()">Cancelar</button>
-                    <button class="btn btn-primary" onclick="gerarPDF()"><i class="fa-solid fa-download"></i> Transferir PDF</button>
-                </div>
+                <section id="tab-dashboard" class="tab-section active">
+                    <div class="section-header">
+                        <div>
+                            <h2 class="section-title">Painel de Controlo</h2>
+                            <p class="section-subtitle">Acompanhe os seus agendamentos e resultados.</p>
+                        </div>
+                    </div>
+
+                    <div class="highlight-card" id="proxima-visita-card">
+                        <i class="fa-solid fa-calendar-days highlight-bg-icon"></i>
+                        <div style="color: var(--primary); font-weight: bold; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-triangle-exclamation"></i> 📌 Próxima Visita Agendada
+                        </div>
+                        <div id="proxima-visita-content" style="position: relative; z-index: 10;">
+                            </div>
+                    </div>
+
+                    <div class="filters-bar">
+                        <div class="form-group" style="flex: 1; min-width: 140px;">
+                            <label>De (Data Inicial)</label>
+                            <input type="date" class="form-control" id="dash-data-inicio" onchange="renderDashboard()">
+                        </div>
+                        <div class="form-group" style="flex: 1; min-width: 140px;">
+                            <label>Até (Data Final)</label>
+                            <input type="date" class="form-control" id="dash-data-fim" onchange="renderDashboard()">
+                        </div>
+                        <button class="btn btn-outline" style="height: 42px;" onclick="limparFiltrosDashboard()">Resetar Ciclo</button>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <div class="stat-card">
+                            <div>
+                                <div class="stat-title">Total no Período</div>
+                                <div class="stat-value" id="count-total">0</div>
+                                <div class="stat-money" id="valor-total">R$ 0,00</div>
+                            </div>
+                            <div class="stat-icon icon-blue"><i class="fa-solid fa-calendar-days"></i></div>
+                        </div>
+                        <div class="stat-card border-warning">
+                            <div>
+                                <div class="stat-title">Pendentes</div>
+                                <div class="stat-value" id="count-pendentes">0</div>
+                                <div class="stat-money" id="valor-pendentes">R$ 0,00</div>
+                            </div>
+                            <div class="stat-icon icon-yellow"><i class="fa-regular fa-clock"></i></div>
+                        </div>
+                        <div class="stat-card border-success">
+                            <div>
+                                <div class="stat-title">Efetivados</div>
+                                <div class="stat-value" id="count-efetivados">0</div>
+                                <div class="stat-money" id="valor-efetivados">R$ 0,00</div>
+                            </div>
+                            <div class="stat-icon icon-green"><i class="fa-solid fa-circle-check"></i></div>
+                        </div>
+                        <div class="stat-card border-danger">
+                            <div>
+                                <div class="stat-title">Frustrados</div>
+                                <div class="stat-value" id="count-frustrados">0</div>
+                                <div class="stat-money" id="valor-frustrados">R$ 0,00</div>
+                            </div>
+                            <div class="stat-icon icon-red"><i class="fa-solid fa-circle-xmark"></i></div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-top: 24px;">
+                        <div class="stat-card" style="flex-direction: column; align-items: flex-start; justify-content: flex-start;">
+                            <h3 style="font-size: 1.1rem; margin-bottom: 16px; color: var(--text-main);">Conversão de Visitas</h3>
+                            <div style="width: 100%; height: 250px; position: relative;">
+                                <canvas id="chartConversao"></canvas>
+                            </div>
+                        </div>
+                        <div class="stat-card" style="flex-direction: column; align-items: flex-start; justify-content: flex-start;">
+                            <h3 style="font-size: 1.1rem; margin-bottom: 16px; color: var(--text-main);">Distribuição de Chaves</h3>
+                            <div style="width: 100%; height: 250px; position: relative;">
+                                <canvas id="chartChaves"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="tab-list" class="tab-section">
+                    <div class="section-header">
+                        <div>
+                            <h2 class="section-title">Agendamentos</h2>
+                            <p class="section-subtitle">Consulte as suas visitas e históricos.</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="prepararNovoAgendamento()">
+                            <i class="fa-solid fa-circle-plus"></i> Novo Agendamento
+                        </button>
+                    </div>
+
+                    <div class="filters-bar" style="justify-content: space-between; align-items: center;">
+                        <div class="form-group" style="max-width: 400px; position: relative;">
+                            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 35px; color: #94a3b8;"></i>
+                            <label>Pesquisar</label>
+                            <input type="text" class="form-control" id="busca-lista" placeholder="Filtrar por referência..." style="padding-left: 36px;" onkeyup="renderLista()">
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="ver-finalizados" onchange="renderLista()" style="width: 18px; height: 18px; cursor: pointer;">
+                            <label for="ver-finalizados" style="font-size: 0.875rem; font-weight: 600; color: var(--text-main); cursor: pointer;">Mostrar Histórico (Finalizados)</label>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                               <tr>
+                                    <th style="min-width: 200px;">Referência / Detalhes</th>
+                                    <th style="min-width: 120px;">Valor (R$)</th>
+                                    <th style="min-width: 150px;">Data e Hora</th>
+                                    <th style="min-width: 150px;">Status Imóvel</th>
+                                    <th style="min-width: 120px;">Resultado</th>
+                                    <th style="text-align: right; min-width: 160px;">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-corpo">
+                                </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section id="tab-form" class="tab-section">
+                    <div class="section-header">
+                        <div>
+                            <h2 class="section-title" id="form-title">Agendar Nova Visita</h2>
+                            <p class="section-subtitle">Preencha os detalhes da visita abaixo.</p>
+                        </div>
+                    </div>
+
+                    <div class="form-container">
+                        <form id="agendamento-form" onsubmit="salvarAgendamento(event)">
+                            <input type="hidden" id="form-id">
+                            
+                            <div class="form-group" style="margin-bottom: 20px;">
+                                <label>Referência</label>
+                                <input type="text" id="form-referencia" class="form-control" required placeholder="Nome do Cliente ou Imóvel">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 20px;">
+                                <label>Valor do Imóvel (R$)</label>
+                                <input type="number" id="form-valor" class="form-control" step="0.01" min="0" placeholder="Informe o valor do Imóvel">
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 20px;">
+                                <label>Detalhes da Visita</label>
+                                <textarea id="form-detalhes" class="form-control" rows="4" required placeholder="Observações importantes..."></textarea>
+                            </div>
+
+                            <div style="display: flex; gap: 24px; margin-bottom: 32px; flex-wrap: wrap;">
+                                <div class="form-group" style="min-width: 200px; flex: 1;">
+                                    <label>Data e Hora</label>
+                                    <input type="datetime-local" id="form-datahora" class="form-control" required>
+                                </div>
+                                
+                                <div class="form-group" style="min-width: 200px; flex: 1;">
+                                    <label>Acompanhamento</label>
+                                    <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-top: 8px;">
+                                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                            <input type="radio" name="form-acompanhamento" value="Acompanhar" checked> Acompanhar
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                            <input type="radio" name="form-acompanhamento" value="Não Acompanhar"> Não Acompanhar
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="form-group" style="min-width: 200px; flex: 1;">
+                                    <label>Local da Chave</label>
+                                    <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-top: 8px;">
+                                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                            <input type="radio" name="form-chave" value="Locabens" checked> Locabens
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                            <input type="radio" name="form-chave" value="Redentora"> Redentora
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 12px; border-top: 1px solid var(--border-color); padding-top: 24px;">
+                                <button type="button" class="btn btn-outline" onclick="switchTab('list')">Cancelar</button>
+                                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Guardar Agendamento</button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="alerta-modal">
+        <div class="modal-box">
+            <div style="display: flex; align-items: center; gap: 12px; color: var(--warning); margin-bottom: 16px;">
+                <i class="fa-solid fa-bell fa-shake" style="font-size: 2rem;"></i>
+                <h2 style="font-size: 1.5rem; font-weight: bold; color: #1e293b;">Lembrete de Visita!</h2>
+            </div>
+            <p id="alerta-texto" style="font-size: 1.125rem; color: #475569; margin-bottom: 24px; line-height: 1.5;"></p>
+            <button class="btn" style="width: 100%; justify-content: center; background: var(--warning); color: #713f12; font-size: 1rem;" onclick="fecharAlerta()">
+                Ciente, Fechar
+            </button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="exportar-modal">
+        <div class="modal-box">
+            <div style="display: flex; align-items: center; gap: 12px; color: var(--primary); margin-bottom: 16px;">
+                <i class="fa-solid fa-file-pdf" style="font-size: 2rem;"></i>
+                <h2 style="font-size: 1.5rem; font-weight: bold; color: #1e293b;">Exportar PDF</h2>
+            </div>
+            <p style="font-size: 1rem; color: #475569; margin-bottom: 16px;">Selecione o período de visitas que deseja incluir no relatório:</p>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label>Data Inicial</label>
+                <input type="date" class="form-control" id="export-data-inicio">
+            </div>
+            <div class="form-group" style="margin-bottom: 24px;">
+                <label>Data Final</label>
+                <input type="date" class="form-control" id="export-data-fim">
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button class="btn btn-outline" onclick="fecharModalExportar()">Cancelar</button>
+                <button class="btn btn-primary" onclick="gerarPDF()"><i class="fa-solid fa-download"></i> Transferir PDF</button>
             </div>
         </div>
-    </body>
-    <script src="script.js"></script>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDTgRb3-vM5JtgygooKPqTP_e4JAaaF0do",
+            authDomain: "locagenda-8ad78.firebaseapp.com",
+            databaseURL: "https://locagenda-8ad78-default-rtdb.firebaseio.com",
+            projectId: "locagenda-8ad78",
+            storageBucket: "locagenda-8ad78.firebasestorage.app",
+            messagingSenderId: "449749713536",
+            appId: "1:449749713536:web:23ec8e83cace10a2e91c65"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        
+        window.db = getDatabase(app);
+        window.auth = getAuth(app);
+        window.dbRef = ref;
+        window.dbSet = set;
+        window.dbOnValue = onValue;
+        
+        const provider = new GoogleAuthProvider();
+        window.loginGoogle = () => signInWithPopup(window.auth, provider);
+        window.logout = () => signOut(window.auth);
+        window.onAuthStateChanged = onAuthStateChanged;
+
+        const btnLogin = document.getElementById('btn-login-google');
+        if(btnLogin) btnLogin.onclick = () => window.loginGoogle();
+    </script>
+    
+    <script src="java.js"></script>
+</body>
 </html>
