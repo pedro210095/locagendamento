@@ -975,7 +975,7 @@ window.gerarPDF = function() {
                  ["Visitas Efetivadas (Sucesso)", ef.length],
                  ["Visitas Frustradas (Canceladas/Falta)", fr.length],
                  ["Visitas Pendentes", pe.length],
-                 ["Taxa de Conversão Geral", `${taxaConversao}%`]
+                 ["Taxa de Conversão Geral Sobre os Efetivados", `${taxaConversao}%`]
              ],
              headStyles: { fillColor: [30, 41, 59] }, // Azul Escuro
              columnStyles: { 1: { halign: 'center', fontStyle: 'bold' } }
