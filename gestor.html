@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Gestor - LocAgenda</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="style.css">
+    
+    <style>
+        .gestor-sidebar { background: linear-gradient(to bottom, #0f172a 0%, #0369a1 100%) !important; }
+        .dot-gestor {
+            width: 20px; height: 20px; border-radius: 50%; display: flex;
+            align-items: center; justify-content: center; font-size: 0.6rem;
+            color: white; font-weight: bold; margin: 2px;
+        }
+        .modal-box table { min-width: 0 !important; width: 100% !important; }
+    </style>
+</head>
+<body>
+
+    <div id="loading-global" style="position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: #f8fafc; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 99999;">
+        <i class="fa-solid fa-building-user fa-beat" style="font-size: 3rem; color: #0369a1; margin-bottom: 16px;"></i>
+        <p style="color: #64748b; font-weight: 500;">A validar acesso de Gestor...</p>
+    </div>
+
+    <div class="app-container" id="app-container-main" style="display: none;">
+        
+        <aside class="sidebar gestor-sidebar">
+            <div class="sidebar-header" style="flex-direction: column; align-items: stretch; gap: 16px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div class="logo-icon" style="background-color: #0ea5e9;"><i class="fa-solid fa-chart-line text-white"></i></div>
+                    <span id="nome-imobiliaria-sidebar">Painel Gestor</span>
+                </div>
+                <div class="imob-selector-wrapper">
+                    <i class="fa-solid fa-building select-icon"></i>
+                    <select id="select-imobiliaria-ativa" class="imob-select-premium" onchange="trocarContextoImobiliaria(this.value)">
+                        </select>
+                    <i class="fa-solid fa-chevron-down select-arrow"></i>
+                </div>
+            </div>
+            <nav class="nav-menu">
+                <button class="nav-btn active" onclick="switchTab('dashboard')" id="btn-tab-dashboard">
+                    <i class="fa-solid fa-chart-pie"></i> Dashboard da Equipe
+                </button>
+                <button class="nav-btn" onclick="switchTab('equipa')" id="btn-tab-equipa">
+                    <i class="fa-solid fa-users"></i> Acompanhamento
+                </button>
+                <button class="nav-btn" onclick="switchTab('calendario')" id="btn-tab-calendario">
+                    <i class="fa-regular fa-calendar-alt"></i> Agenda Global
+                </button>
+                <button class="nav-btn" onclick="switchTab('config')" id="btn-tab-config">
+                    <i class="fa-solid fa-gear"></i> Configurações
+                </button>
+                <button class="nav-btn" onclick="switchTab('relatorios')" id="btn-tab-relatorios">
+                    <i class="fa-solid fa-file-pdf"></i> Relatórios e PDF
+                </button>
+
+                <div style="height: 1px; background-color: rgba(255,255,255,0.1); margin: 16px 0;"></div>
+                
+                <button class="nav-btn" onclick="window.location.href='index.html'">
+                    <i class="fa-solid fa-arrow-left"></i> O Meu Painel Pessoal
+                </button>
+                <button class="nav-btn" onclick="fazerLogout()"><i class="fa-solid fa-right-from-bracket"></i> Sair</button>
+            </nav>
+        </aside>                
+
+        <main class="main-content">
+            <div class="content-wrapper">
+
+                <section id="tab-dashboard" class="tab-section active">
+                    <div class="section-header">
+                        <div>
+                            <h2 class="section-title">Visão Geral da Imobiliária: <span id="nome-imob-header" style="color: #0ea5e9;">---</span></h2>
+                            <p class="section-subtitle">Acompanhe a performance consolidada de toda a sua equipe.</p>
+                        </div>
+                        <div class="dash-toggle">
+                            <button class="dash-toggle-btn active" id="toggle-locacao" onclick="mudarContexto('Locação')">Locação</button>
+                            <button class="dash-toggle-btn" id="toggle-venda" onclick="mudarContexto('Venda')" style="display: none;">Venda</button>
+                        </div>
+                    </div>
+
+                    <div class="filters-bar" style="display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end;">
+                        <div style="display: flex; gap: 16px; flex: 2; flex-wrap: wrap;">
+                            <div class="form-group" style="flex: 1; min-width: 140px;">
+                                <label>De (Data Inicial)</label>
+                                <input type="text" class="form-control" id="dash-data-inicio">
+                            </div>
+                            <div class="form-group" style="flex: 1; min-width: 140px;">
+                                <label>Até (Data Final)</label>
+                                <input type="text" class="form-control" id="dash-data-fim">
+                            </div>
+                        </div>
+                        <button class="btn btn-outline" style="height: 42px;" onclick="limparFiltros()">Resetar Ciclo</button>
+                    </div>
+
+                <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                    <div class="stat-card" style="border-left: 4px solid #3b82f6;">
+                        <div><div class="stat-title">Visitas Agendadas</div><div class="stat-value" id="card-total-visitas">0</div></div>
+                        <div class="stat-icon" style="background: #eff6ff; color: #3b82f6;"><i class="fa-regular fa-calendar-check"></i></div>
+                    </div>
+                    <div class="stat-card" style="border-left: 4px solid #a855f7;">
+                        <div>
+                            <div class="stat-title">Taxa de Conversão</div>
+                            <div class="stat-value" id="card-conversao">0%</div>
+                            <div class="stat-money" style="color: #64748b; font-size:0.8rem;" id="texto-conversao">Efetivados vs Frustrados</div>
+                        </div>
+                        <div class="stat-icon" style="background: #f3e8ff; color: #a855f7;"><i class="fa-solid fa-percent"></i></div>
+                    </div>
+                    <div class="stat-card" style="border-left: 4px solid #10b981;">
+                        <div>
+                            <div class="stat-title" id="titulo-volume">Volume Efetivado</div>
+                            <div class="stat-value" id="card-volume" style="color: #10b981;">R$ 0,00</div>
+                            <div class="stat-money" style="color: #64748b; font-size:0.8rem;">Soma dos Efetivados</div>
+                        </div>
+                        <div class="stat-icon icon-green"><i class="fa-solid fa-sack-dollar"></i></div>
+                    </div>
+                    <div class="stat-card" style="border-left: 4px solid #f59e0b;">
+                        <div>
+                            <div class="stat-title">Volume Pendente</div>
+                            <div class="stat-value" id="card-volume-pendente" style="color: #f59e0b;">R$ 0,00</div>
+                            <div class="stat-money" style="color: #64748b; font-size:0.8rem;">Expectativa de Fechamento</div>
+                        </div>
+                        <div class="stat-icon" style="background: #fff7ed; color: #f59e0b;"><i class="fa-solid fa-hourglass-start"></i></div>
+                    </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 24px; margin-top: 24px;">
+
+                   <div class="stat-card" style="flex-direction: column; align-items: stretch; width: 100%;">
+                    <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; margin-bottom: 20px;">
+                        <h3 style="font-size: 1.1rem; color: var(--text-main);"><i class="fa-solid fa-trophy" style="color: #eab308;"></i> Performance da Equipe</h3>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">Dados em tempo real</span>
+                    </div>
+
+                    <div style="display: flex; gap: 20px; margin-bottom: 30px; height: 180px;">
+                        <div style="flex: 1; text-align: center;">
+                            <small style="color: #64748b; font-weight: 600; display: block; margin-bottom: 8px;">Distribuição de Chaves</small>
+                            <canvas id="chartChavesEquipa"></canvas>
+                        </div>
+                        <div style="flex: 1; text-align: center;">
+                            <small style="color: #64748b; font-weight: 600; display: block; margin-bottom: 8px;">Desempenho: Acompanhamento</small>
+                            <canvas id="chartAcompanhamentoEquipa"></canvas>
+                        </div>
+                    </div>
+                        
+                        <div id="ranking-corretores-container" style="display: flex; flex-direction: column; gap: 10px; width: 100%; max-height: 350px; overflow-y: auto; padding-right: 4px;">
+                            </div>
+                    </div>
+                        <div class="stat-card" style="flex-direction: column; align-items: flex-start; flex: 1;">
+                            <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; margin-bottom: 16px;">
+                                <h3 style="font-size: 1.1rem; color: var(--text-main);">Termómetro de Bairros</h3>
+                                <span style="font-size: 0.8rem; color: var(--text-muted);">Top 10 Bairros</span>
+                            </div>
+                            
+                            <div id="ranking-bairros-container" style="display: flex; flex-direction: column; gap: 10px; width: 100%; max-height: 350px; overflow-y: auto; padding-right: 4px;">
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="tab-equipa" class="tab-section">
+                    <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                        <div>
+                            <h2 class="section-title">Acompanhamento de Corretores</h2>
+                            <p class="section-subtitle">Gamificação de metas e alertas SLA de negligência.</p>
+                        </div>
+                        <button class="btn btn-outline" style="color: #dc2626; border-color: #fecaca;" onclick="abrirModalLixeira()">
+                            <i class="fa-solid fa-trash-can-arrow-up"></i> Auditoria de Exclusões
+                        </button>
+                    </div>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                               <tr>
+                                    <th>Nome do Corretor</th>
+                                    <th style="text-align: center;">Pendente</th>
+                                    <th style="text-align: center;">Efetivado</th>
+                                    <th style="text-align: center;">Frustrado</th>
+                                    <th>Valor Gerado (R$)</th>
+                                    <th>Próxima Visita</th>
+                                    <th style="text-align: right;">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-equipa-corpo"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section id="tab-calendario" class="tab-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Agenda Global da Equipa</h2>
+                    </div>
+                    <div class="calendar-container">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <button class="btn btn-outline" onclick="mudarMes(-1)"><i class="fa-solid fa-chevron-left"></i> Anterior</button>
+                            <h3 id="mes-ano-display" style="margin: 0; font-size: 1.2rem; font-weight: bold;">Mês Ano</h3>
+                            <button class="btn btn-outline" onclick="mudarMes(1)">Próximo <i class="fa-solid fa-chevron-right"></i></button>
+                        </div>
+                        <div class="calendar-header-days">
+                            <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
+                        </div>
+                        <div class="calendar-grid" id="calendar-grid-global"></div>
+                    </div>
+                    
+                    <div class="form-container" id="agenda-dia-container" style="display: none; margin-top: 24px; max-width: 100%;">
+                        <h3 id="titulo-dia-agenda" style="margin-bottom: 16px;">Visitas do Dia</h3>
+                        <div class="table-container">
+                            <table style="min-width: 1000px;">
+                                <thead><tr><th>Corretor</th><th>Cliente / Imóvel</th><th>Horário</th><th>Status</th></tr></thead>
+                                <tbody id="tabela-dia-corpo"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="tab-config" class="tab-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Configurações da Imobiliária</h2>
+                        <p class="section-subtitle">Defina as regras de metas e comissionamento para toda a equipe.</p>
+                    </div>
+
+                    <div class="mini-tabs">
+                        <button class="mini-tab active" onclick="switchConfigTabGestor('locacao')" id="tab-btn-gestor-locacao">Metas de Locação</button>
+                        <button class="mini-tab" onclick="switchConfigTabGestor('venda')" id="tab-btn-gestor-venda" style="display: none;">Metas de Vendas</button>
+                    </div>
+
+                    <div class="form-container">
+                        <div id="panel-gestor-locacao" class="config-panel active">
+                            <h3 style="font-size: 1.1rem; color: var(--text-main); margin-bottom: 16px;"><i class="fa-solid fa-key" style="color: var(--info);"></i> Parâmetros de Locação</h3>
+                            <div style="display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 24px;">
+                                <div class="form-group" style="flex: 1.5; min-width: 200px;">
+                                    <label>Meta Mensal de Locação (R$)</label>
+                                    <input type="number" id="gestor-meta-locacao" class="form-control" placeholder="Ex: 5000">
+                                </div>
+                                <div class="form-group" style="flex: 1; min-width: 120px;">
+                                    <label>Comissão Padrão (%)</label>
+                                    <input type="number" id="gestor-comissao-locacao" class="form-control" placeholder="Ex: 20">
+                                </div>
+                                <div class="form-group" style="flex: 1; min-width: 120px;">
+                                    <label>Comissão Atingida (%)</label>
+                                    <input type="number" id="gestor-super-locacao" class="form-control" placeholder="Ex: 30">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="panel-gestor-venda" class="config-panel">
+                            <h3 style="font-size: 1.1rem; color: var(--text-main); margin-bottom: 16px;"><i class="fa-solid fa-house-chimney" style="color: var(--warning);"></i> Parâmetros de Vendas</h3>
+                            <div style="display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 24px;">
+                                <div class="form-group" style="flex: 1.5; min-width: 200px;">
+                                    <label>Meta Mensal de VGV (R$)</label>
+                                    <input type="number" id="gestor-meta-venda" class="form-control" placeholder="Ex: 1000000">
+                                </div>
+                                <div class="form-group" style="flex: 1; min-width: 120px;">
+                                    <label>Comissão Padrão (%)</label>
+                                    <input type="number" id="gestor-comissao-venda" class="form-control" placeholder="Ex: 1.5">
+                                </div>
+                                <div class="form-group" style="flex: 1; min-width: 120px;">
+                                    <label>Comissão Atingida (%)</label>
+                                    <input type="number" id="gestor-super-venda" class="form-control" placeholder="Ex: 2.0">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+                            <button class="btn btn-primary" onclick="salvarMetasEquipa()"><i class="fa-solid fa-save"></i> Guardar Todas as Configurações</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="tab-relatorios" class="tab-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Central de Relatórios Estratégicos</h2>
+                        <p class="section-subtitle">Gere PDFs focados em diferentes áreas da sua gestão imobiliária.</p>
+                    </div>
+                    
+                    <div class="filters-bar" style="display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 24px; max-width: 600px;">
+                        <div class="form-group" style="flex: 1; min-width: 140px;">
+                            <label>Data Inicial do Relatório</label>
+                            <input type="text" class="form-control" id="export-inicio">
+                        </div>
+                        <div class="form-group" style="flex: 1; min-width: 140px;">
+                            <label>Data Final do Relatório</label>
+                            <input type="text" class="form-control" id="export-fim">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+                        
+                        <div class="stat-card" style="flex-direction: column; align-items: flex-start; gap: 12px; border-left: 4px solid #10b981;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <i class="fa-solid fa-file-invoice-dollar" style="color: #10b981; font-size: 1.5rem;"></i>
+                                <h3 style="font-size: 1.1rem; color: var(--text-main); margin: 0;">1. Fechamento de Mês (Locação)</h3>
+                            </div>
+                            <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; flex: 1;">Resumo Executivo focado em Locação. Mostra o VGL gerado, o atingimento da meta da imobiliária e o Top 3 de corretores com melhor conversão.</p>
+                            <button class="btn btn-primary" onclick="gerarPDFFechoMes()" style="width: 100%; background: #10b981; border: none;"><i class="fa-solid fa-download"></i> Gerar Relatório</button>
+                        </div>
+
+                        <div class="stat-card" style="flex-direction: column; align-items: flex-start; gap: 12px; border-left: 4px solid #3b82f6;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <i class="fa-solid fa-users-viewfinder" style="color: #3b82f6; font-size: 1.5rem;"></i>
+                                <h3 style="font-size: 1.1rem; color: var(--text-main); margin: 0;">2. Raio-X da Equipe</h3>
+                            </div>
+                            <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; flex: 1;">Ideal para Feedback 1-a-1. Exibe por corretor: taxa de conversão, volume financeiro pendente (na rua) e o padrão de acompanhamento de clientes.</p>
+                            <button class="btn btn-primary" onclick="gerarPDFRaioXEquipa()" style="width: 100%; background: #3b82f6; border: none;"><i class="fa-solid fa-download"></i> Gerar Relatório</button>
+                        </div>
+
+                        <div class="stat-card" style="flex-direction: column; align-items: flex-start; gap: 12px; border-left: 4px solid #ef4444;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <i class="fa-solid fa-truck-fast" style="color: #ef4444; font-size: 1.5rem;"></i>
+                                <h3 style="font-size: 1.1rem; color: var(--text-main); margin: 0;">3. Perdas e Gargalos</h3>
+                            </div>
+                            <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; flex: 1;">Auditoria Logística. Revela os locais de chaves com mais visitas frustradas, o valor estimado perdido e as justificativas deixadas pelos corretores.</p>
+                            <button class="btn btn-primary" onclick="gerarPDFGargalos()" style="width: 100%; background: #ef4444; border: none;"><i class="fa-solid fa-download"></i> Gerar Relatório</button>
+                        </div>
+
+                        <div class="stat-card" style="flex-direction: column; align-items: flex-start; gap: 12px; border-left: 4px solid #f59e0b;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <i class="fa-solid fa-fire" style="color: #f59e0b; font-size: 1.5rem;"></i>
+                                <h3 style="font-size: 1.1rem; color: var(--text-main); margin: 0;">4. Pipeline de Ataque</h3>
+                            </div>
+                            <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; flex: 1;">Plano de ação para a semana. Ignora o que já passou e lista APENAS as visitas pendentes, do maior valor para o menor, com o responsável.</p>
+                            <button class="btn btn-primary" onclick="gerarPDFPipeline()" style="width: 100%; background: #f59e0b; border: none;"><i class="fa-solid fa-download"></i> Gerar Relatório</button>
+                        </div>
+
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+    <div class="modal-overlay" id="modal-detalhes-corretor">
+        <div class="modal-box" style="max-width: 800px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="font-size: 1.3rem; color: var(--text-main);" id="span-nome-corretor">Detalhes do Corretor</h2>
+                <button onclick="fecharModalDetalhes()" style="background:transparent; border:none; cursor:pointer; font-size:1.2rem; color: var(--text-muted);"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                <table>
+                    <thead style="position: sticky; top: 0; background: white;">
+                        <tr><th>Cliente / Referência</th><th>Data/Hora</th><th>Valor</th><th>Status</th></tr>
+                    </thead>
+                    <tbody id="tabela-detalhes-corpo"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-lixeira-equipa">
+        <div class="modal-box" style="max-width: 900px; border-top-color: #dc2626;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="font-size: 1.3rem; color: #dc2626;"><i class="fa-solid fa-user-secret"></i> Auditoria de Exclusões</h2>
+                <button onclick="fecharModalLixeira()" style="background:transparent; border:none; cursor:pointer; font-size:1.2rem;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 16px;">Visitas ocultadas pelos corretores. Apenas o Gestor pode excluí-las permanentemente do sistema.</p>
+            <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                <table>
+                    <thead style="position: sticky; top: 0; background: white;">
+                        <tr><th>Corretor</th><th>Cliente / Ref</th><th>Motivo Declarado</th><th>Data Ocultação</th><th style="text-align: right;">Ação Definitiva</th></tr>
+                    </thead>
+                    <tbody id="tabela-lixeira-corpo"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        // A LINHA ABAIXO FOI CORRIGIDA (adicionado: query, orderByChild, equalTo)
+        import { getDatabase, ref, onValue, get, set, update, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDTgRb3-vM5JtgygooKPqTP_e4JAaaF0do",
+            authDomain: "locagenda-8ad78.firebaseapp.com",
+            databaseURL: "https://locagenda-8ad78-default-rtdb.firebaseio.com",
+            projectId: "locagenda-8ad78"
+        };
+        const app = initializeApp(firebaseConfig);
+        window.db = getDatabase(app);
+        window.auth = getAuth(app);
+        window.dbRef = ref;
+        window.dbGet = get;
+        window.dbSet = set; 
+        window.dbOnValue = onValue;
+        window.dbUpdate = update; 
+        
+        // Agora estas 3 variáveis vão funcionar porque foram importadas acima
+        window.dbQuery = query;
+        window.dbOrderByChild = orderByChild;
+        window.dbEqualTo = equalTo;
+        
+        window.logout = () => signOut(window.auth);
+        window.onAuthStateChanged = onAuthStateChanged;
+    </script>
+    
+    <script src="gestor.js" charset="UTF-8"></script>
+</body>
+</html>

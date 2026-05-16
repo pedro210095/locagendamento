@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Master - LocAgenda</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="admin_master.css">
+    
+    <style>
+        .modal-box table {
+            min-width: 0 !important; 
+            width: 100% !important;
+        }
+        .modal-overlay { z-index: 999999; }
+    </style>
+</head>
+<body class="admin-body">
+
+    <div id="admin-lock-screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; z-index: 9999999; display: flex; align-items: center; justify-content: center; color: white; flex-direction: column;">
+        <i class="fa-solid fa-shield-halved fa-beat" style="font-size: 3rem; margin-bottom: 20px; color: #3b82f6;"></i>
+        <h2>A validar credenciais de Administrador...</h2>
+    </div>
+
+    <div class="app-container" id="admin-container" style="display: none;">
+        <aside class="sidebar admin-sidebar">
+            <div class="sidebar-header">
+                <div class="logo-icon" style="background-color: #3b82f6;"><i class="fa-solid fa-crown text-white"></i></div>
+                <span>Painel Master</span>
+            </div>
+            <nav class="nav-menu">
+                <button class="nav-btn active" id="btn-tab-global" onclick="switchAdminTab('global')">
+                    <i class="fa-solid fa-globe"></i> Visão Global
+                </button>
+                <button class="nav-btn" id="btn-tab-equipes" onclick="switchAdminTab('equipes')">
+                    <i class="fa-solid fa-building-user"></i> Imobiliárias
+                </button>
+                <button class="nav-btn" id="btn-tab-solo" onclick="switchAdminTab('solo')">
+                    <i class="fa-solid fa-user-ninja"></i> Corretores Solo
+                </button>
+                <button class="nav-btn" id="btn-tab-sys" onclick="switchAdminTab('sys')">
+                    <i class="fa-solid fa-gears"></i> Sistema
+                </button>
+                <div style="height: 1px; background-color: #1e293b; margin: 16px 0;"></div>
+                <button class="nav-btn" onclick="window.location.href='index.html'">
+                    <i class="fa-solid fa-arrow-left"></i> Voltar ao App
+                </button>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="content-wrapper">
+
+                <section id="tab-global" style="display: block;">
+                    <header class="section-header" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;">
+                        <div>
+                            <h2 class="section-title">Diretório Global de Utilizadores</h2>
+                            <p class="section-subtitle">Gestão total de gestores e utilizadores independentes.</p>
+                        </div>
+                        
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <div style="position: relative;">
+                                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 12px; color: #94a3b8;"></i>
+                                <input type="text" id="busca-master-global" class="form-control" placeholder="Pesquisar corretor ou e-mail..." onkeyup="filtrarMasterGlobal()" style="padding-left: 35px; min-width: 260px;">
+                            </div>
+                            
+                            <button onclick="sincronizarEmails()" class="btn-governança" style="background: #eab308; color: white; padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; height: 42px;">
+                                <i class="fa-solid fa-sync"></i> Sincronizar Emails
+                            </button>
+                        </div>
+                    </header>
+
+                    <div class="dashboard-grid">
+                        <div class="stat-card" style="border-left: 4px solid #3b82f6;">
+                            <div><div class="stat-title">Total Utilizadores</div><div class="stat-value" id="master-total-users">0</div></div>
+                            <div class="stat-icon" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6;"><i class="fa-solid fa-users"></i></div>
+                        </div>
+                        <div class="stat-card" style="border-left: 4px solid #a855f7;">
+                            <div><div class="stat-title">Gestores Ativos</div><div class="stat-value" id="master-total-gestores">0</div></div>
+                            <div class="stat-icon" style="background: rgba(168, 85, 247, 0.1); color: #a855f7;"><i class="fa-solid fa-tie"></i></div>
+                        </div>
+                        <div class="stat-card" style="border-left: 4px solid #10b981;">
+                            <div><div class="stat-title">Volume Total</div><div class="stat-value" id="master-total-volume">R$ 0,00</div></div>
+                            <div class="stat-icon icon-green"><i class="fa-solid fa-chart-line"></i></div>
+                        </div>
+                    </div>
+
+                    <div class="table-container" style="margin-top: 24px;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Utilizador</th>
+                                    <th>Equipes</th>
+                                    <th>Último Acesso</th>
+                                    <th>Status</th>
+                                    <th style="text-align: right;">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-master-corpo"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section id="tab-equipes" style="display: none;">
+                    <header class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h2 class="section-title">Imobiliárias e Grupos</h2>
+                            <p class="section-subtitle">Crie grupos e organize gestores e corretores em cada empresa.</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="abrirModalNovaImob()">
+                            <i class="fa-solid fa-plus"></i> Novo Grupo (Imobiliária)
+                        </button>
+                    </header>
+                    <div class="table-container" style="margin-top: 24px;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nome da Imobiliária</th>
+                                    <th>ID do Grupo</th>
+                                    <th style="text-align: center;">Membros Totais</th>
+                                    <th style="text-align: right;">Ações de Grupo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-imobiliarias-corpo"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section id="tab-solo" style="display: none;">
+                    <header class="section-header"><h2 class="section-title">Corretores Solo</h2></header>
+                    <div class="table-container" style="margin-top: 24px;">
+                        <table>
+                            <thead><tr><th>Nome</th><th>E-mail</th><th>Último Acesso</th><th style="text-align: right;">Ações</th></tr></thead>
+                            <tbody id="tabela-solo-corpo"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section id="tab-sys" style="display: none; animation: fadeIn 0.3s ease-in-out;">
+                    <header class="section-header">
+                        <h2 class="section-title">Configurações de Sistema</h2>
+                        <p class="section-subtitle">Manutenção da plataforma e comunicações globais.</p>
+                    </header>
+
+                    <div class="dashboard-grid">
+                                 <div class="stat-card" style="border-left: 4px solid #eab308; flex-direction: column; align-items: flex-start; gap: 15px;">
+                            <div style="display: flex; justify-content: space-between; width: 100%;">
+                                <div class="stat-title">Enviar Aviso Global</div>
+                                <i class="fa-solid fa-bullhorn" style="color: #eab308;"></i>
+                            </div>
+                            <input type="text" id="input-aviso-global" class="form-control" placeholder="Digite uma mensagem para todos os usuários...">
+                            <button class="btn btn-primary" onclick="enviarAvisoGlobal()" style="width: 100%; background: #eab308;">Enviar Notificação</button>
+                        </div>
+
+                                 <div class="stat-card" style="border-left: 4px solid #ef4444; flex-direction: column; align-items: flex-start; gap: 15px;">
+                            <div style="display: flex; justify-content: space-between; width: 100%;">
+                                <div class="stat-title">Modo Manutenção</div>
+                                <i class="fa-solid fa-screwdriver-wrench" style="color: #ef4444;"></i>
+                            </div>
+                            <p style="font-size: 0.8rem; color: #64748b;">Bloqueia o acesso de todos os corretores temporariamente.</p>
+                            <button class="btn-governança btn-suspend" id="btn-manutencao" onclick="toggleManutencao()" style="width: 100%; padding: 10px;">Ativar Bloqueio</button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="modal-nova-imobiliaria">
+        <div class="modal-box" style="max-width: 450px; border-top-color: #3b82f6;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="font-size: 1.3rem;"><i class="fa-solid fa-building"></i> Nova Imobiliária</h2>
+                <button onclick="fecharModalNovaImob()" style="background:transparent; border:none; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="form-group">
+                <label>Nome da Imobiliária</label>
+                <input type="text" id="imob-nome-input" class="form-control" placeholder="Ex: Locabens Imóveis">
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px;">
+                <button class="btn btn-outline" onclick="fecharModalNovaImob()">Cancelar</button>
+                <button class="btn btn-primary" onclick="salvarImobiliaria()">Criar Agora</button>
+            </div>
+        </div>
+    </div>
+
+   <div class="modal-overlay" id="modal-membros-grupo">
+        <div class="modal-box" style="max-width: 750px; border-top-color: #10b981;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="font-size: 1.3rem;"><i class="fa-solid fa-users-gear"></i> Membros: <span id="span-imob-nome">---</span></h2>
+                <button onclick="fecharModalMembrosGrupo()" style="background:transparent; border:none; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <label style="font-size: 0.85rem; font-weight: bold; color: #475569; display: block; margin-bottom: 10px;">Procurar e Incluir Utilizadores Solo</label>
+                <div style="position: relative; margin-bottom: 10px;">
+                    <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 12px; color: #94a3b8;"></i>
+                    <input type="text" id="busca-membro-solo" class="form-control" placeholder="Pesquisar por nome ou e-mail..." onkeyup="filtrarMembrosSolo()" style="padding-left: 35px;">
+                </div>
+                <div style="max-height: 200px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; background: white;">
+                    <table style="width: 100%; font-size: 0.85rem;">
+                        <thead style="position: sticky; top: 0; background: #f8fafc; z-index: 10; border-bottom: 1px solid #e2e8f0;">
+                            <tr><th style="padding:10px; text-align:left;">Nome / E-mail</th><th style="padding:10px; text-align:right;">Ação</th></tr>
+                        </thead>
+                        <tbody id="lista-solos-disponiveis-corpo"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <label style="font-size: 0.85rem; font-weight: bold; color: #475569; display: block; margin-bottom: 10px;">Membros já vinculados a esta Imobiliária</label>
+            <div style="max-height: 200px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; background: white;">
+                <table style="width: 100%; font-size: 0.85rem;">
+                    <thead style="position: sticky; top: 0; background: #f8fafc; z-index: 10; border-bottom: 1px solid #e2e8f0;">
+                        <tr><th style="padding:12px; text-align:left;">Membro</th><th style="padding:12px; text-align:center;">Cargo</th><th style="padding:12px; text-align:right;">Ação</th></tr>
+                    </thead>
+                    <tbody id="lista-membros-imob-corpo"></tbody>
+                </table>
+            </div>
+            <input type="hidden" id="input-imob-id-atual">
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, onValue, set, get, child, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        const firebaseConfig = {
+            apiKey: "AIzaSyDTgRb3-vM5JtgygooKPqTP_e4JAaaF0do",
+            authDomain: "locagenda-8ad78.firebaseapp.com",
+            databaseURL: "https://locagenda-8ad78-default-rtdb.firebaseio.com",
+            projectId: "locagenda-8ad78",
+            storageBucket: "locagenda-8ad78.firebasestorage.app",
+            messagingSenderId: "449749713536",
+            appId: "1:449749713536:web:23ec8e83cace10a2e91c65"
+        };
+        const app = initializeApp(firebaseConfig);
+        window.db = getDatabase(app); 
+        window.auth = getAuth(app); 
+        window.dbRef = ref; 
+        window.dbSet = set;
+        window.dbGet = get; 
+        window.dbChild = child; 
+        window.dbOnValue = onValue; 
+        window.dbUpdate = update;
+        window.onAuthStateChanged = onAuthStateChanged;
+    </script>
+    <script src="admin_master.js"></script>
+</body>
+</html>
